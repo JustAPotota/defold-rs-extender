@@ -11,3 +11,28 @@ extender:
         enabled: false
         # This points to the host machine from inside docker
         url: http://host.docker.internal:9010
+
+management:
+    endpoints:
+        web:
+            exposure:
+                include: metrics
+
+    metrics:
+        export:
+            cloudwatch:
+                enabled: false
+                namespace: extender-dev
+                step: 30s
+
+cloud:
+    aws:
+        region:
+            auto: false
+            static: eu-west-1
+
+# https://docs.spring.io/spring-cloud-aws/docs/2.2.5.RELEASE/2.2.5.RELEASE/reference/html/#sdk-credentials-configuration
+# Either this, picking up environment variables, or using environment variables altogether
+# or using a .aws/config/credentials file
+#cloud.aws.credentials.access-key=YOUR_ACCESS_KEY
+#cloud.aws.credentials.secret-key=YOUR_SECRET_KEY

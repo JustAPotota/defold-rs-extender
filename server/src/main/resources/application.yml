@@ -60,11 +60,10 @@ management:
             path: /
             threshold: 1073741824 #1024mb
 
-    endpoint:
-        influx:
-            enabled: false
-
     metrics:
         export:
-            influx:
+            cloudwatch:
                 enabled: false
+                namespace: extender
+                batch-size: 20
+                step: 1m
