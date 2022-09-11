@@ -668,7 +668,7 @@ class Extender {
         List<File> srcFiles = listFiles(srcDirs, platformConfig.sourceRe);
 
         if (srcFiles.isEmpty()) {
-            throw new ExtenderException(String.format("%s:1: error: Extension has no source!", ExtenderUtil.getRelativePath(this.uploadDirectory, manifest) ));
+            LOGGER.warning("Extension has no source!");
         }
 
         // Generate C++ files first (output into the source folder)
