@@ -75,12 +75,14 @@ RUN \
 # EMSCRIPTEN
 #
 
+ARG EMSCRIPTEN_SDK
+
 ENV EMCC_SKIP_SANITY_CHECK 1
 
 ## Emscripten 2.0.11 (from version 1.2.178)
 
 # Ubuntu still seem to use python3 3.8 as default version
-RUN \
+RUN if [ -z "$EMSCRIPTEN_SDK" ] ; then echo Skipping HTML5 setup... ; else \
   add-apt-repository ppa:deadsnakes/ppa && \
   apt-get autoclean && \
   apt-get update && \
@@ -88,7 +90,8 @@ RUN \
   apt-get install -y --no-install-recommends python3.9 && \
   update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1 && \
   update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 2 && \
-  python3 --version
+  python3 --version \
+  ; fi
 
 ENV EMSCRIPTEN_SDK_2_0_11 ${PLATFORMSDK_DIR}/emsdk-2.0.11
 ENV EMSCRIPTEN_HOME_2_0_11 ${EMSCRIPTEN_SDK_2_0_11}
@@ -99,37 +102,44 @@ ENV EMSCRIPTEN_PYTHON_2_0_11 /usr/bin/python3.9
 # Setup a special env variable that will be prefixed to PATH if requested version is 2.0.11
 ENV EMSCRIPTEN_PATH_2_0_11 ${EMSCRIPTEN_HOME_2_0_11}:${EMSCRIPTEN_HOME_2_0_11}/upstream/bin:${EMSCRIPTEN_HOME_2_0_11}/node/12.9.1_64bit/bin:${EMSCRIPTEN_BIN_2_0_11}
 
-RUN \
+RUN if [ -z "$EMSCRIPTEN_SDK" ] ; then echo Skipping HTML5 setup... ; else \
   mkdir ${EMSCRIPTEN_SDK_2_0_11} && \
-  wget -q -O - ${DM_PACKAGES_URL}/emsdk-2.0.11-linux.tar.gz | tar xz -C ${EMSCRIPTEN_SDK_2_0_11} --strip-components=1
+  wget -q -O - ${DM_PACKAGES_URL}/emsdk-2.0.11-linux.tar.gz | tar xz -C ${EMSCRIPTEN_SDK_2_0_11} --strip-components=1 \
+  ; fi
 
-RUN \
+RUN if [ -z "$EMSCRIPTEN_SDK" ] ; then echo Skipping HTML5 setup... ; else \
   ${EMSCRIPTEN_HOME_2_0_11}/emsdk activate sdk-2.0.11-64bit --embedded && \
   EM_CONFIG=$EMSCRIPTEN_CONFIG_2_0_11 EM_CACHE=${EMSCRIPTEN_CACHE_2_0_11} python3 ${EMSCRIPTEN_BIN_2_0_11}/embuilder.py build SYSTEM MINIMAL && \
   chmod -R 755 ${EMSCRIPTEN_HOME_2_0_11} && \
   chown -R extender: ${EMSCRIPTEN_CACHE_2_0_11} && \
-  chown -R extender: ${EMSCRIPTEN_CACHE_2_0_11}/wasm/cache.lock
+  chown -R extender: ${EMSCRIPTEN_CACHE_2_0_11}/wasm/cache.lock \
+  ; fi
 
 
 # We use the same temp directory for both versions.
 ENV EMSCRIPTEN_TEMP_DIR /var/extender/ems_temp
-RUN mkdir -p ${EMSCRIPTEN_TEMP_DIR}
-RUN chmod -R 755 ${EMSCRIPTEN_TEMP_DIR} && chown extender: ${EMSCRIPTEN_TEMP_DIR}
+RUN if [ -z "$EMSCRIPTEN_SDK" ] ; then echo Skipping HTML5 setup... ; else mkdir -p ${EMSCRIPTEN_TEMP_DIR} ; fi
+RUN if [ -z "$EMSCRIPTEN_SDK" ] ; then echo Skipping HTML5 setup... ; else chmod -R 755 ${EMSCRIPTEN_TEMP_DIR} && chown extender: ${EMSCRIPTEN_TEMP_DIR} ; fi
 # The "sed" command below removes the /TEMP_DIR line from the generated configs
 # We replace it with a folder of our own
-RUN sed '/TEMP_DIR =/d' ${EMSCRIPTEN_CONFIG_2_0_11} && \
-  echo TEMP_DIR = \'${EMSCRIPTEN_TEMP_DIR}\' >> ${EMSCRIPTEN_CONFIG_2_0_11}
+RUN if [ -z "$EMSCRIPTEN_SDK" ] ; then echo Skipping HTML5 setup... ; else \
+  sed '/TEMP_DIR =/d' ${EMSCRIPTEN_CONFIG_2_0_11} && \
+  echo TEMP_DIR = \'${EMSCRIPTEN_TEMP_DIR}\' >> ${EMSCRIPTEN_CONFIG_2_0_11} \
+  ; fi
   #  && \
   # sed '/TEMP_DIR =/d' ${EMSCRIPTEN_CONFIG_1_39_16} && \
   # echo TEMP_DIR = \'${EMSCRIPTEN_TEMP_DIR}\' >> ${EMSCRIPTEN_CONFIG_1_39_16}
 
-RUN \
-  update-alternatives --set python3 /usr/bin/python3.8
+RUN if [ -z "$EMSCRIPTEN_SDK" ] ; then echo Skipping HTML5 setup... ; else \
+  update-alternatives --set python3 /usr/bin/python3.8 \
+  ; fi
 
 
 #
 # Windows
 #
+
+ARG WINDOWS_SDK
 
 ENV \
   PLATFORMSDK_WIN32=$PLATFORMSDK_DIR/Win32 \
@@ -152,62 +162,72 @@ ENV \
   WindowsSDKVersion="${WINDOWS_SDK_10_VERSION}"
 
 # windres: Allows for generating .res files that can be used during linking
-RUN \
+RUN if [ -z "$WINDOWS_SDK" ] ; then echo Skipping Windows setup... ; else \
   echo "Win32 SDK - WINDRES" && \
   apt-get update && \
   apt-get install -y binutils-mingw-w64-x86-64 && \
   ls -la /usr/bin/x86_64-w64-mingw32-windres && \
-  ln -s /usr/bin/x86_64-w64-mingw32-windres /usr/local/bin/windres
+  ln -s /usr/bin/x86_64-w64-mingw32-windres /usr/local/bin/windres \
+  ; fi
 
-RUN \
+RUN if [ -z "$WINDOWS_SDK" ] ; then echo Skipping Windows setup... ; else \
   echo "WIN32 2019 SDK" && \
   mkdir -p ${PLATFORMSDK_WIN32}/MicrosoftVisualStudio2019 && \
-  wget -q -O - ${DM_PACKAGES_URL}/Microsoft-Visual-Studio-2019-${WINDOWS_MSVC_2019_VERSION}.tar.gz | tar xz -C ${PLATFORMSDK_WIN32}/MicrosoftVisualStudio2019
+  wget -q -O - ${DM_PACKAGES_URL}/Microsoft-Visual-Studio-2019-${WINDOWS_MSVC_2019_VERSION}.tar.gz | tar xz -C ${PLATFORMSDK_WIN32}/MicrosoftVisualStudio2019 \
+  ; fi
 
-RUN \
+RUN if [ -z "$WINDOWS_SDK" ] ; then echo Skipping Windows setup... ; else \
   echo "WIN32 10 SDK" && \
   mkdir -p ${PLATFORMSDK_WIN32}/WindowsKits && \
-  wget -q -O - ${DM_PACKAGES_URL}/WindowsKits-${WINDOWS_SDK_10_VERSION}.tar.gz | tar xz -C ${PLATFORMSDK_WIN32}/WindowsKits
+  wget -q -O - ${DM_PACKAGES_URL}/WindowsKits-${WINDOWS_SDK_10_VERSION}.tar.gz | tar xz -C ${PLATFORMSDK_WIN32}/WindowsKits \
+  ; fi
 
-RUN \
+RUN if [ -z "$WINDOWS_SDK" ] ; then echo Skipping Windows setup... ; else \
   ln -s /usr/local/bin/clang /usr/local/bin/x86_64-pc-win32-clang && \
-  ln -s /usr/local/bin/llvm-ar /usr/local/bin/x86_64-pc-win32-clang-ar
+  ln -s /usr/local/bin/llvm-ar /usr/local/bin/x86_64-pc-win32-clang-ar \
+  ; fi
 
 # Due to Windows' case insensitive file system, the sources reference lib files with wrong cases
 # so we solve the bulk by making the suffixes lowercase
-RUN find $PLATFORMSDK_WIN32 -iname '*.Lib' -exec sh -c 'a=$(echo "$0" | sed -r "s/([^.]*)\$/\L\1/"); [ "$a" != "$0" ] && mv "$0" "$a" ' {} \;
+RUN if [ -z "$WINDOWS_SDK" ] ; then echo Skipping Windows setup... ; else find $PLATFORMSDK_WIN32 -iname '*.Lib' -exec sh -c 'a=$(echo "$0" | sed -r "s/([^.]*)\$/\L\1/"); [ "$a" != "$0" ] && mv "$0" "$a" ' {} \; ; fi
 # Make a copy of all the headers too, in lower case (e.g. Windows.h -> windows.h etc)
-RUN find $PLATFORMSDK_WIN32 -iname '*.h' -exec sh -c 'd=$(dirname "$0"); a=$(basename "$0" | tr [:upper:] [:lower:]); [ "$a" != $(basename "$0") ] && cp "$0" "$d/$a" ' {} \;
+RUN if [ -z "$WINDOWS_SDK" ] ; then echo Skipping Windows setup... ; else find $PLATFORMSDK_WIN32 -iname '*.h' -exec sh -c 'd=$(dirname "$0"); a=$(basename "$0" | tr [:upper:] [:lower:]); [ "$a" != $(basename "$0") ] && cp "$0" "$d/$a" ' {} \; ; fi
 
-RUN \
+RUN if [ -z "$WINDOWS_SDK" ] ; then echo Skipping Windows setup... ; else \
   echo "WIN32 SDK - Cleanup" && \
 # and the rest are manually copied (or made lower case)
   (cd ${WINDOWS_MSVC_2019_DIR}/lib/x64 && cp oldnames.lib OLDNAMES.lib) && \
   (cd ${WINDOWS_MSVC_2019_DIR}/lib/x86 && cp oldnames.lib OLDNAMES.lib) && \
   (cd ${WINDOWS_MSVC_2019_DIR}/lib/x64 && cp delayimp.lib Delayimp.lib) && \
-  (cd ${WINDOWS_MSVC_2019_DIR}/lib/x86 && cp delayimp.lib Delayimp.lib)
+  (cd ${WINDOWS_MSVC_2019_DIR}/lib/x86 && cp delayimp.lib Delayimp.lib) \
+  ; fi
 
 # Some headers are named by the wrong name in the windows sdk's...
 # We need to make certain names lowercase because some users
 # have put "pragma lib" comments in some libraries :(
-RUN \
+RUN if [ -z "$WINDOWS_SDK" ] ; then echo Skipping Windows setup... ; else \
   echo "WIN32 WindowsKits 10 - Cleanup" && \
   (cd ${WINDOWS_SDK_10_DIR}/Include/${WINDOWS_SDK_10_VERSION}/shared && cp driverspecs.h DriverSpecs.h) && \
   (cd ${WINDOWS_SDK_10_DIR}/Include/${WINDOWS_SDK_10_VERSION}/shared && cp specstrings.h SpecStrings.h) && \
   (cd ${WINDOWS_SDK_10_DIR}/Include/${WINDOWS_SDK_10_VERSION}/shared && cp concurrencysal.h ConcurrencySal.h) && \
-  (cd ${WINDOWS_SDK_10_DIR}/Lib/${WINDOWS_SDK_10_VERSION} && find . -type f -exec sh -c 'x="{}"; xl=$(echo $x | sed -e "s/\(.*\)/\L\1/"); if [ $x != $xl ]; then cp $x $xl; fi' \;)
+  (cd ${WINDOWS_SDK_10_DIR}/Lib/${WINDOWS_SDK_10_VERSION} && find . -type f -exec sh -c 'x="{}"; xl=$(echo $x | sed -e "s/\(.*\)/\L\1/"); if [ $x != $xl ]; then cp $x $xl; fi' \;) \
+  ; fi
 
 # Also, the OpenGL headers in the windows SDK is in a folder with lower case letters, which doesn't match the includes
-RUN \
+RUN if [ -z "$WINDOWS_SDK" ] ; then echo Skipping Windows setup... ; else \
   echo "WIN32 WindowsKits 10 - OpenGL Cleanup" && \
   cd ${WINDOWS_SDK_10_DIR}/Include/${WINDOWS_SDK_10_VERSION}/um && \
   mkdir ./GL && \
-  cp -v ./gl/*.* ./GL/
+  cp -v ./gl/*.* ./GL/ \
+  ; fi
 
 #
 # Android SDK/NDK
 # https://developer.android.com/studio/command-line/variables
 #
+
+ARG ANDROID_SDK
+
 ENV ANDROID_ROOT ${PLATFORMSDK_DIR}/android
 ENV ANDROID_BUILD_TOOLS_VERSION 32.0.0
 # ANDROID_HOME has been replaced with ANDROID_SDK_ROOT
@@ -247,14 +267,15 @@ ENV AAPT ${ANDROID_SDK_BUILD_TOOLS_PATH}/aapt
 ENV PATH ${PATH}:${ANDROID_HOME}/tools:${ANDROID_HOME}/platform-tools:${ANDROID_SDK_BUILD_TOOLS_PATH}:${ANDROID_NDK20_BIN_PATH}
 
 # android proguard was version 4.7, this is at least 5.2.1 which seems to work with OpenJDK 11
-RUN \
+RUN if [ -z "$ANDROID_SDK" ] ; then echo Skipping Android setup... ; else \
   apt-get update && \
   apt-get install -y --no-install-recommends proguard && \
-  ls -la /usr/share/java/proguard.jar
+  ls -la /usr/share/java/proguard.jar \
+  ; fi
 
 ENV ANDROID_PROGUARD=/usr/share/java/proguard.jar
 
-RUN \
+RUN if [ -z "$ANDROID_SDK" ] ; then echo Skipping Android setup... ; else \
     echo "Android SDK" && \
     mkdir -p ${ANDROID_HOME} && \
     wget -q -O - ${DM_PACKAGES_URL}/${ANDROID_NDK20_FILENAME} | tar xz -C ${ANDROID_ROOT} && \
@@ -288,35 +309,42 @@ RUN \
     which armv7a-linux-androideabi${ANDROID_NDK20_API_VERSION}-clang++ && \
     which aarch64-linux-android${ANDROID_64_NDK20_API_VERSION}-clang++ && \
 # check that aapt installed correctly
-    aapt v
+    aapt v \
+    ; fi
 
 #
 # Switch SDK
 #
+
+ARG SWITCH_SDK
 
 # Added in version 1.3.3
 ENV NINTENDO_SDK_ROOT_14_3_0 ${PLATFORMSDK_DIR}/nx-14.3.0
 
 ENV SWITCH_SDK_14_FILENAME nx64-sdk-14.3.0.tar.gz
 
-RUN \
+RUN if [ -z "$SWITCH_SDK" ] ; then echo Skipping Nintendo Switch setup... ; else \
   echo "Switch SDK 14.3.0" && \
   mkdir -p ${NINTENDO_SDK_ROOT_14_3_0} && \
-  wget -q -O - ${DM_PACKAGES_URL}/${SWITCH_SDK_14_FILENAME} | tar xz -C ${NINTENDO_SDK_ROOT_14_3_0}
+  wget -q -O - ${DM_PACKAGES_URL}/${SWITCH_SDK_14_FILENAME} | tar xz -C ${NINTENDO_SDK_ROOT_14_3_0} \
+  ; fi
 
 
 #
 # PS4 SDK
 #
 
+ARG PS4_SDK
+
 ENV PS4_SDK_9_000 ${PLATFORMSDK_DIR}/ps4-sdk-9.000
 
 ENV PS4_SDK_9_FILENAME ps4-sdk-9.000.tar.gz
 
-RUN \
+RUN if [ -z "$PS4_SDK" ] ; then echo Skipping PlayStation 4 setup... ; else \
   echo "PS4 SDK 9.000" && \
   mkdir -p ${PS4_SDK_9_000} && \
-  wget -q -O - ${DM_PACKAGES_URL}/${PS4_SDK_9_FILENAME} | tar xz -C ${PS4_SDK_9_000} --strip-components=1
+  wget -q -O - ${DM_PACKAGES_URL}/${PS4_SDK_9_FILENAME} | tar xz -C ${PS4_SDK_9_000} --strip-components=1 \
+  ; fi
 
 
 #
