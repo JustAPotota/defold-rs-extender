@@ -668,7 +668,7 @@ class Extender {
         List<File> srcFiles = listFiles(srcDirs, platformConfig.sourceRe);
 
         if (srcFiles.isEmpty()) {
-            LOGGER.warning("Extension has no source!");
+            LOGGER.warn("Extension has no source!");
         }
 
         // Generate C++ files first (output into the source folder)
