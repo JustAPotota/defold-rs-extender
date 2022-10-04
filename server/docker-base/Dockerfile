@@ -15,6 +15,7 @@ RUN \
     libtool \
     autoconf \
     automake \
+    build-essential \
     uuid-dev \
     libxi-dev \
     libopenal-dev \
@@ -293,17 +294,6 @@ RUN \
 # Switch SDK
 #
 
-ENV NINTENDO_SDK_ROOT_13_3_0 ${PLATFORMSDK_DIR}/nx-13.3.0
-# Backwards compatibility, since they're still using that env variable
-ENV NINTENDO_SDK_ROOT         ${NINTENDO_SDK_ROOT_13_3_0}
-
-ENV SWITCH_SDK_13_FILENAME nx64-sdk-13.3.0.tar.gz
-
-RUN \
-  echo "Switch SDK 13.3.0" && \
-  mkdir -p ${NINTENDO_SDK_ROOT} && \
-  wget -q -O - ${DM_PACKAGES_URL}/${SWITCH_SDK_13_FILENAME} | tar xz -C ${NINTENDO_SDK_ROOT}
-
 # Added in version 1.3.3
 ENV NINTENDO_SDK_ROOT_14_3_0 ${PLATFORMSDK_DIR}/nx-14.3.0
 
@@ -312,7 +302,7 @@ ENV SWITCH_SDK_14_FILENAME nx64-sdk-14.3.0.tar.gz
 RUN \
   echo "Switch SDK 14.3.0" && \
   mkdir -p ${NINTENDO_SDK_ROOT_14_3_0} && \
-  wget -q -O - ${DM_PACKAGES_URL}/${SWITCH_SDK_13_FILENAME} | tar xz -C ${NINTENDO_SDK_ROOT_14_3_0}
+  wget -q -O - ${DM_PACKAGES_URL}/${SWITCH_SDK_14_FILENAME} | tar xz -C ${NINTENDO_SDK_ROOT_14_3_0}
 
 
 #
@@ -410,17 +400,9 @@ COPY template.build.gradle ${EXTENSION_BUILD_GRADLE_TEMPLATE}
 COPY template.gradle.properties ${EXTENSION_GRADLE_PROPERTIES_TEMPLATE}
 COPY template.local.properties ${EXTENSION_LOCAL_PROPERTIES_TEMPLATE}
 
-#
-# iOS + OSX
-#
-
-# For package instructions, see <defold>/scripts/mobile/package_xcode_and_sdks.sh
-# and <defold>/scripts/mobile/package_cctools.sh
-
-# TODO: (remove this comment) This comment was added to force a rebuild of the container
-ENV FORCE_IOS_REBUILD 1
-
-ENV LD_LIBRARY_PATH ${LD_LIBRARY_PATH}
+# iOS + MacOS
+# Although the building isn't done using the Docker container anymore
+# we still need to be able to resolve the variables in the case when we run the docker container locally  when debugging
 
 # NOTE: These values are replicated in server/scripts/standalone/service-standalone.sh
 # Install flow from  >=1.2.174
@@ -440,74 +422,6 @@ ENV IOS_15_VERSION          15.2
 ENV XCODE_13_CLANG_VERSION  13.0.0
 ENV SWIFT_5_5_VERSION       5.5
 
-# IMPORTANT!: For the standalone darwin server to work, it also
-# needs some of these environment variables. See service-standalone.sh
-
-# The updated install flow
-RUN \
-  apt-get update && \
-  apt-get install -y git cmake build-essential && \
-  cd /tmp && \
-  TAPITMP=/usr/local/tapi1.6 && \
-  mkdir $TAPITMP && \
-  git clone https://github.com/tpoechtrager/apple-libtapi.git && \
-  cd apple-libtapi && \
-  git checkout 664b8414f89612f2dfd35a9b679c345aa5389026 && \
-  INSTALLPREFIX=$TAPITMP ./build.sh && \
-  ./install.sh && \
-  cd .. && \
-  git clone https://github.com/tpoechtrager/cctools-port.git && \
-  cd cctools-port/cctools && \
-  git checkout 6c438753d2252274678d3e0839270045698c159b && \
-  ./configure --prefix=/usr/local --target=arm-apple-darwin19 --with-libtapi=$TAPITMP && \
-  make -j8 && \
-  make install && \
-  make distclean && \
-  ./configure --prefix=/usr/local --target=x86_64-apple-darwin19 --with-libtapi=$TAPITMP && \
-  make -j8 && \
-  make install && \
-  make distclean && \
-  cd ../.. && \
-  rm -rf apple-libtapi && \
-  rm -rf cctools-port
-
-RUN \
-  echo "iOS 14 + macOS 10/11 + XCode 12" && \
-  wget -q -O - ${DM_PACKAGES_URL}/iPhoneOS${IOS_14_VERSION}.sdk.tar.gz | tar xz -C ${PLATFORMSDK_DIR} && \
-  mv ${PLATFORMSDK_DIR}/iPhoneOS.sdk ${PLATFORMSDK_DIR}/iPhoneOS${IOS_14_VERSION}.sdk && \
-  wget -q -O - ${DM_PACKAGES_URL}/iPhoneSimulator${IOS_14_VERSION}.sdk.tar.gz | tar xz -C ${PLATFORMSDK_DIR} && \
-  mv ${PLATFORMSDK_DIR}/iPhoneSimulator.sdk ${PLATFORMSDK_DIR}/iPhoneSimulator${IOS_14_VERSION}.sdk && \
-  wget -q -O - ${DM_PACKAGES_URL}/MacOSX${MACOS_10_15_VERSION}.sdk.tar.gz | tar xz -C ${PLATFORMSDK_DIR} && \
-  mv ${PLATFORMSDK_DIR}/MacOSX.sdk ${PLATFORMSDK_DIR}/MacOSX${MACOS_10_15_VERSION}.sdk && \
-  wget -q -O - ${DM_PACKAGES_URL}/MacOSX${MACOS_11_VERSION}.sdk.tar.gz | tar xz -C ${PLATFORMSDK_DIR} && \
-  mv ${PLATFORMSDK_DIR}/MacOSX.sdk ${PLATFORMSDK_DIR}/MacOSX${MACOS_11_VERSION}.sdk && \
-  wget -q -O - ${DM_PACKAGES_URL}/XcodeDefault${XCODE_12_VERSION}.xctoolchain.linux.tar.gz | tar xz -C ${PLATFORMSDK_DIR} && \
-  mv ${PLATFORMSDK_DIR}/XcodeDefault.xctoolchain ${PLATFORMSDK_DIR}/XcodeDefault${XCODE_12_VERSION}.xctoolchain
-
-RUN \
-  echo "iOS 15 + macOS 12 + XCode 13" && \
-  wget -q -O - ${DM_PACKAGES_URL}/iPhoneOS${IOS_15_VERSION}.sdk.tar.gz | tar xz -C ${PLATFORMSDK_DIR} && \
-  mv ${PLATFORMSDK_DIR}/iPhoneOS.sdk ${PLATFORMSDK_DIR}/iPhoneOS${IOS_15_VERSION}.sdk && \
-  wget -q -O - ${DM_PACKAGES_URL}/iPhoneSimulator${IOS_15_VERSION}.sdk.tar.gz | tar xz -C ${PLATFORMSDK_DIR} && \
-  mv ${PLATFORMSDK_DIR}/iPhoneSimulator.sdk ${PLATFORMSDK_DIR}/iPhoneSimulator${IOS_15_VERSION}.sdk && \
-  wget -q -O - ${DM_PACKAGES_URL}/MacOSX${MACOS_12_VERSION}.sdk.tar.gz | tar xz -C ${PLATFORMSDK_DIR} && \
-  mv ${PLATFORMSDK_DIR}/MacOSX.sdk ${PLATFORMSDK_DIR}/MacOSX${MACOS_12_VERSION}.sdk && \
-  wget -q -O - ${DM_PACKAGES_URL}/XcodeDefault${XCODE_13_VERSION}.xctoolchain.linux.tar.gz | tar xz -C ${PLATFORMSDK_DIR} && \
-  mv ${PLATFORMSDK_DIR}/XcodeDefault.xctoolchain ${PLATFORMSDK_DIR}/XcodeDefault${XCODE_13_VERSION}.xctoolchain
-
-# This part is not yet separable between xcode versions, but should work
-RUN \
-  ln -s /usr/local/bin/llvm-ar /usr/local/bin/ar && \
-  ln -s ${PLATFORMSDK_DIR}/XcodeDefault${XCODE_13_VERSION}.xctoolchain/usr/lib/arc /usr/local/lib/arc
-
-# The shared library isn't really used yet, but it's good to have it in place so we can build upon it
-RUN mkdir -p /usr/local/lib/clang/13.0.0/lib/darwin && \
-    ln -s /opt/platformsdk/XcodeDefault${XCODE_13_VERSION}.xctoolchain/usr/lib/clang/${XCODE_13_CLANG_VERSION}/lib/darwin/libclang_rt.asan_osx_dynamic.dylib \
-    /usr/local/lib/clang/13.0.0/lib/darwin/libclang_rt.asan_osx_dynamic.dylib && \
-    ln -s /opt/platformsdk/XcodeDefault${XCODE_13_VERSION}.xctoolchain/usr/lib/clang/${XCODE_13_CLANG_VERSION}/lib/darwin/libclang_rt.ubsan_osx_dynamic.dylib \
-    /usr/local/lib/clang/13.0.0/lib/darwin/libclang_rt.ubsan_osx_dynamic.dylib && \
-    ln -s /opt/platformsdk/XcodeDefault${XCODE_13_VERSION}.xctoolchain/usr/lib/clang/${XCODE_13_CLANG_VERSION}/lib/darwin/libclang_rt.tsan_osx_dynamic.dylib \
-    /usr/local/lib/clang/13.0.0/lib/darwin/libclang_rt.tsan_osx_dynamic.dylib
 
 # Final cleanup
 
