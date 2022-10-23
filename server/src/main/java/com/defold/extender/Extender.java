@@ -664,7 +664,7 @@ class Extender {
         File extDir = manifest.getParentFile();
 
         File cargoManifest = new File(extDir, "src/Cargo.toml");
-        boolean hasRust = cargoManifest.isFile();
+        boolean hasRust = cargoManifest.isFile() && Objects.equals(this.platform, "x86_64-linux");
 
         // Gather all the C++ files
         File[] srcDirs = { new File(extDir, FOLDER_COMMON_SRC), new File(extDir, FOLDER_ENGINE_SRC) };
