@@ -10,11 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.error.YAMLException;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -683,7 +679,7 @@ class Extender {
 
         if (hasRust) {
             processExecutor.execute("cargo crate-type static --file " + cargoManifest.getPath());
-            commands.add("cargo build -q --lib --manifest-path=" + cargoManifest.getPath());
+            commands.add("cargo build -q --lib --release --manifest-path=" + cargoManifest.getPath());
         }
 
         // Compile C++ source into object files
@@ -712,13 +708,13 @@ class Extender {
         LOGGER.info("Created context");
 
         if (hasRust) {
-            try {
-                FileUtils.moveFile(new File(extDir, "src/target/debug/libextension.a"), (File) context.get("tgt"));
-            } catch (Exception e) {
-                LOGGER.info(e.toString());
-            }
-            //String rustCmd = templateExecutor.execute("mv " + extDir.getAbsolutePath() + "/target/debug/libextension.a {{tgt}}", context);
-            //processExecutor.execute(rustCmd);
+            File src = Arrays.stream(Objects.requireNonNull(new File(extDir, "src/target/release").listFiles(new FilenameFilter() {
+                @Override
+                public boolean accept(File dir, String name) {
+                    return name.startsWith("lib") && name.endsWith(".a");
+                }
+            }))).findAny().get();
+            FileUtils.moveFile(src, (File) context.get("tgt"));
             LOGGER.info("Moved Rust library");
         }
 
