@@ -14,7 +14,7 @@ server/test-data/sdk/*
 /**/*.pdb
 
 # IntelliJ IDEA
-/.idea
+.idea
 /*.iml
 /*.ipr
 /*.iws

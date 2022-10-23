@@ -23,6 +23,7 @@ RUN \
     libglw1-mesa-dev \
     freeglut3-dev \
     unzip \
+    curl \
     # for use when debugging
     tree \
     silversearcher-ag \
@@ -449,6 +450,26 @@ ENV MACOS_12_VERSION        12.1
 ENV IOS_15_VERSION          15.2
 ENV XCODE_13_CLANG_VERSION  13.0.0
 ENV SWIFT_5_5_VERSION       5.5
+
+
+# Rust setup
+USER extender
+ENV RUSTUP_HOME /var/extender/rustup
+ENV CARGO_HOME  /var/extender/cargo
+RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable --no-modify-path -y
+ENV PATH $CARGO_HOME/bin:$PATH
+USER root
+
+
+# sccache setup
+RUN cd "/var/extender"
+RUN curl -L "https://github.com/mozilla/sccache/releases/download/v0.3.0/sccache-v0.3.0-x86_64-unknown-linux-musl.tar.gz" | \
+	tar -xz
+RUN mv "sccache-v0.3.0-x86_64-unknown-linux-musl/sccache" "$CARGO_HOME/bin/"
+RUN chmod 755 "$CARGO_HOME/bin/sccache"
+RUN rm -rf "sccache-v0.3.0-x86_64-unknown-linux-musl"
+RUN printf "[build]\nrustc-wrapper = \"sccache\"" > $CARGO_HOME/config.toml
+ENV SCCACHE_DIR /var/extender/sccache
 
 
 # Final cleanup

@@ -663,6 +663,9 @@ class Extender {
     private void buildExtension(File manifest, Map<String, Object> manifestContext) throws IOException, InterruptedException, ExtenderException {
         File extDir = manifest.getParentFile();
 
+        File cargoManifest = new File(extDir, "src/Cargo.toml");
+        boolean hasRust = cargoManifest.isFile();
+
         // Gather all the C++ files
         File[] srcDirs = { new File(extDir, FOLDER_COMMON_SRC), new File(extDir, FOLDER_ENGINE_SRC) };
         List<File> srcFiles = listFiles(srcDirs, platformConfig.sourceRe);
@@ -682,6 +685,10 @@ class Extender {
 
         List<String> objs = new ArrayList<>();
         List<String> commands = new ArrayList<>();
+
+        if (hasRust) {
+            commands.add("cargo build --config lib.crate-type=\"staticlib\" --manifest-path=" + cargoManifest.getPath());
+        }
 
         // Compile C++ source into object files
         int i = getAndIncreaseNameCount();
@@ -703,6 +710,13 @@ class Extender {
         Map<String, Object> context = context(manifestContext);
         context.put("tgt", lib);
         context.put("objs", objs);
+
+        if (hasRust) {
+            FileUtils.moveFile(new File(extDir.getAbsolutePath() + "/target/debug/libextension.a"), (File) context.get("tgt"));
+            String rustCmd = templateExecutor.execute("mv " + extDir.getAbsolutePath() + "/target/debug/libextension.a {{tgt}}", context);
+            processExecutor.execute(rustCmd);
+        }
+
         String command = templateExecutor.execute(platformConfig.libCmd, context);
         processExecutor.execute(command);
     }
