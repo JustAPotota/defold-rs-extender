@@ -267,12 +267,7 @@ class Extender {
     }
 
     private File createBuildFile(String name) {
-        File file;
-        do {
-            file = new File(buildDirectory, name);
-        } while (file.exists());
-
-        return file;
+        return new File(buildDirectory, name);
     }
 
     private File uniqueTmpFile(String prefix, String suffix) {
@@ -687,7 +682,7 @@ class Extender {
         List<String> commands = new ArrayList<>();
 
         if (hasRust) {
-            commands.add("cargo build --config lib.crate-type=\"staticlib\" --manifest-path=" + cargoManifest.getPath());
+            commands.add("cargo build --manifest-path=" + cargoManifest.getPath());
         }
 
         // Compile C++ source into object files
@@ -700,6 +695,8 @@ class Extender {
 
         ProcessExecutor.executeCommands(processExecutor, commands); // in parallel
 
+        LOGGER.info("Compiled extension");
+
         // Create c++ library
         File lib = null;
         if (platformConfig.writeLibPattern != null) {
@@ -711,14 +708,22 @@ class Extender {
         context.put("tgt", lib);
         context.put("objs", objs);
 
+        LOGGER.info("Created context");
+
         if (hasRust) {
-            FileUtils.moveFile(new File(extDir.getAbsolutePath() + "/target/debug/libextension.a"), (File) context.get("tgt"));
-            String rustCmd = templateExecutor.execute("mv " + extDir.getAbsolutePath() + "/target/debug/libextension.a {{tgt}}", context);
-            processExecutor.execute(rustCmd);
+            try {
+                FileUtils.moveFile(new File(extDir, "src/target/debug/libextension.a"), (File) context.get("tgt"));
+            } catch (Exception e) {
+                LOGGER.info(e.toString());
+            }
+            //String rustCmd = templateExecutor.execute("mv " + extDir.getAbsolutePath() + "/target/debug/libextension.a {{tgt}}", context);
+            //processExecutor.execute(rustCmd);
+            LOGGER.info("Moved Rust library");
         }
 
         String command = templateExecutor.execute(platformConfig.libCmd, context);
         processExecutor.execute(command);
+        LOGGER.info("Built library");
     }
 
     private List<File> buildPipelineExtension(File manifest, Map<String, Object> manifestContext) throws IOException, InterruptedException, ExtenderException {
