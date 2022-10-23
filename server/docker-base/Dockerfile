@@ -460,7 +460,6 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable --no-mo
 ENV PATH $CARGO_HOME/bin:$PATH
 USER root
 
-
 # sccache setup
 RUN cd "/var/extender"
 RUN curl -L "https://github.com/mozilla/sccache/releases/download/v0.3.0/sccache-v0.3.0-x86_64-unknown-linux-musl.tar.gz" | \
@@ -468,9 +467,13 @@ RUN curl -L "https://github.com/mozilla/sccache/releases/download/v0.3.0/sccache
 RUN mv "sccache-v0.3.0-x86_64-unknown-linux-musl/sccache" "$CARGO_HOME/bin/"
 RUN chmod 755 "$CARGO_HOME/bin/sccache"
 RUN rm -rf "sccache-v0.3.0-x86_64-unknown-linux-musl"
-ENV SCCACHE_DIR /var/extender/sccache\
+ENV SCCACHE_DIR /var/extender/sccache
 
-RUN printf "[build]\nrustc-wrapper = \"sccache\"\n\n[lib]\ncrate-type=[\"staticlib\"]" > $CARGO_HOME/config.toml
+ADD cargo-config.toml "$CARGO_HOME/config.toml"
+
+USER extender
+RUN cargo install cargo-crate-type
+USER root
 
 
 # Final cleanup

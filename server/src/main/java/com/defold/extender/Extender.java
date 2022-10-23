@@ -682,7 +682,8 @@ class Extender {
         List<String> commands = new ArrayList<>();
 
         if (hasRust) {
-            commands.add("cargo build --manifest-path=" + cargoManifest.getPath());
+            processExecutor.execute("cargo crate-type static --file " + cargoManifest.getPath());
+            commands.add("cargo build -q --lib --manifest-path=" + cargoManifest.getPath());
         }
 
         // Compile C++ source into object files
