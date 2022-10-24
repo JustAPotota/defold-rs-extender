@@ -211,7 +211,8 @@ RUN if [ -z "$WINDOWS_SDK" ] ; then echo Skipping Windows setup... ; else \
   (cd ${WINDOWS_SDK_10_DIR}/Include/${WINDOWS_SDK_10_VERSION}/shared && cp driverspecs.h DriverSpecs.h) && \
   (cd ${WINDOWS_SDK_10_DIR}/Include/${WINDOWS_SDK_10_VERSION}/shared && cp specstrings.h SpecStrings.h) && \
   (cd ${WINDOWS_SDK_10_DIR}/Include/${WINDOWS_SDK_10_VERSION}/shared && cp concurrencysal.h ConcurrencySal.h) && \
-  (cd ${WINDOWS_SDK_10_DIR}/Lib/${WINDOWS_SDK_10_VERSION} && find . -type f -exec sh -c 'x="{}"; xl=$(echo $x | sed -e "s/\(.*\)/\L\1/"); if [ $x != $xl ]; then cp $x $xl; fi' \;) \
+  (cd ${WINDOWS_SDK_10_DIR}/Include/${WINDOWS_SDK_10_VERSION}/shared && cp wlantypes.h WlanTypes.h) && \
+  (cd ${WINDOWS_SDK_10_DIR}/Lib/${WINDOWS_SDK_10_VERSION} && find . -type f -exec sh -c 'x="{}"; xl=$(echo $x | sed -e "s/\(.*\)/\L\1/"); if [ $x != $xl ]; then cp $x $xl; fi' \;)
   ; fi
 
 # Also, the OpenGL headers in the windows SDK is in a folder with lower case letters, which doesn't match the includes
@@ -336,15 +337,13 @@ RUN if [ -z "$SWITCH_SDK" ] ; then echo Skipping Nintendo Switch setup... ; else
 #
 
 ARG PS4_SDK
-
-ENV PS4_SDK_9_000 ${PLATFORMSDK_DIR}/ps4-sdk-9.000
-
-ENV PS4_SDK_9_FILENAME ps4-sdk-9.000.tar.gz
+ENV PS4_SDK_10_000 ${PLATFORMSDK_DIR}/ps4-sdk-10.000
+ENV PS4_SDK_10_FILENAME ps4-sdk-10.000.tar.gz
 
 RUN if [ -z "$PS4_SDK" ] ; then echo Skipping PlayStation 4 setup... ; else \
-  echo "PS4 SDK 9.000" && \
-  mkdir -p ${PS4_SDK_9_000} && \
-  wget -q -O - ${DM_PACKAGES_URL}/${PS4_SDK_9_FILENAME} | tar xz -C ${PS4_SDK_9_000} --strip-components=1 \
+  echo "PS4 SDK 10.000" && \
+  mkdir -p ${PS4_SDK_10_000} && \
+  wget -q -O - ${DM_PACKAGES_URL}/${PS4_SDK_10_FILENAME} | tar xz -C ${PS4_SDK_10_000} --strip-components=1 \
   ; fi
 
 
