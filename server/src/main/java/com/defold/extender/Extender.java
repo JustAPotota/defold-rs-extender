@@ -677,9 +677,12 @@ class Extender {
         List<String> objs = new ArrayList<>();
         List<String> commands = new ArrayList<>();
 
+        LOGGER.info("Compiling extension");
+
+        File rustTarget = new File(this.buildDirectory, "rust");
         if (hasRust) {
             processExecutor.execute("cargo crate-type static --file " + cargoManifest.getPath());
-            commands.add("cargo build -q --lib --release --manifest-path=" + cargoManifest.getPath());
+            commands.add("cargo build -q --lib --release --manifest-path=" + cargoManifest.getPath() + " --target-dir=" + rustTarget);
         }
 
         // Compile C++ source into object files
@@ -692,8 +695,6 @@ class Extender {
 
         ProcessExecutor.executeCommands(processExecutor, commands); // in parallel
 
-        LOGGER.info("Compiled extension");
-
         // Create c++ library
         File lib = null;
         if (platformConfig.writeLibPattern != null) {
@@ -705,22 +706,14 @@ class Extender {
         context.put("tgt", lib);
         context.put("objs", objs);
 
-        LOGGER.info("Created context");
-
         if (hasRust) {
-            File src = Arrays.stream(Objects.requireNonNull(new File(extDir, "src/target/release").listFiles(new FilenameFilter() {
-                @Override
-                public boolean accept(File dir, String name) {
-                    return name.startsWith("lib") && name.endsWith(".a");
-                }
-            }))).findAny().get();
-            FileUtils.moveFile(src, (File) context.get("tgt"));
-            LOGGER.info("Moved Rust library");
+            File builtLib = listFiles(new File(rustTarget, "release"), "^lib.*\\.a$").get(0);
+            FileUtils.moveFile(builtLib, (File) context.get("tgt"));
         }
 
         String command = templateExecutor.execute(platformConfig.libCmd, context);
         processExecutor.execute(command);
-        LOGGER.info("Built library");
+        LOGGER.info("Built extension");
     }
 
     private List<File> buildPipelineExtension(File manifest, Map<String, Object> manifestContext) throws IOException, InterruptedException, ExtenderException {
