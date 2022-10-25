@@ -682,7 +682,7 @@ class Extender {
         File rustTarget = new File(this.buildDirectory, "rust");
         if (hasRust) {
             processExecutor.execute("cargo crate-type static --file " + cargoManifest.getPath());
-            commands.add("cargo build -q --lib --release --manifest-path=" + cargoManifest.getPath() + " --target-dir=" + rustTarget);
+            commands.add("cargo build --lib --release --manifest-path=" + cargoManifest.getPath() + " --target-dir=" + rustTarget);
         }
 
         // Compile C++ source into object files
