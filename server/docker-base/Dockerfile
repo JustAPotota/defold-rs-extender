@@ -212,7 +212,7 @@ RUN if [ -z "$WINDOWS_SDK" ] ; then echo Skipping Windows setup... ; else \
   (cd ${WINDOWS_SDK_10_DIR}/Include/${WINDOWS_SDK_10_VERSION}/shared && cp specstrings.h SpecStrings.h) && \
   (cd ${WINDOWS_SDK_10_DIR}/Include/${WINDOWS_SDK_10_VERSION}/shared && cp concurrencysal.h ConcurrencySal.h) && \
   (cd ${WINDOWS_SDK_10_DIR}/Include/${WINDOWS_SDK_10_VERSION}/shared && cp wlantypes.h WlanTypes.h) && \
-  (cd ${WINDOWS_SDK_10_DIR}/Lib/${WINDOWS_SDK_10_VERSION} && find . -type f -exec sh -c 'x="{}"; xl=$(echo $x | sed -e "s/\(.*\)/\L\1/"); if [ $x != $xl ]; then cp $x $xl; fi' \;)
+  (cd ${WINDOWS_SDK_10_DIR}/Lib/${WINDOWS_SDK_10_VERSION} && find . -type f -exec sh -c 'x="{}"; xl=$(echo $x | sed -e "s/\(.*\)/\L\1/"); if [ $x != $xl ]; then cp $x $xl; fi' \;) \
   ; fi
 
 # Also, the OpenGL headers in the windows SDK is in a folder with lower case letters, which doesn't match the includes
