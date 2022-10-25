@@ -67,6 +67,7 @@ public class ProcessExecutor {
             }
             double t = duration / divisor;
             System.out.printf("CMD %d took %f %s\n", commandId, t, unit);
+            System.out.println(sb.toString());
         }
 
         output.append(sb.toString()).append("\n");
