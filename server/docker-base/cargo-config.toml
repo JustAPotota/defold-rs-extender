@@ -1,2 +1,3 @@
 [build]
 rustc-wrapper = "sccache"
+target-dir = "/var/extender/target"
