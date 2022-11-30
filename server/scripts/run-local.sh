@@ -16,6 +16,9 @@ fi
 if [ "$DM_DEBUG_JOB_UPLOAD" != "" ]; then
 	LOCAL_ENV="$LOCAL_ENV -e DM_DEBUG_JOB_UPLOAD=${DM_DEBUG_JOB_UPLOAD}"
 fi
+if [ "$RUST_DEBUG" != "" ]; then
+	LOCAL_ENV="$LOCAL_ENV -e RUST_DEBUG=${RUST_DEBUG}"
+fi
 
 echo "Using local env: $LOCAL_ENV"
 

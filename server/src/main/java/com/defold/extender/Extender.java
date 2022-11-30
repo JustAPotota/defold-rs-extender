@@ -655,14 +655,15 @@ class Extender {
         File extDir = manifest.getParentFile();
 
         File cargoManifest = new File(extDir, "src/Cargo.toml");
-        boolean hasRust = cargoManifest.isFile() && Objects.equals(this.platform, "x86_64-linux");
+        boolean hasRust = cargoManifest.isFile();
+        RustConfig rustConfig = RustConfig.forPlatform(this.platform);
 
         // Gather all the C++ files
         File[] srcDirs = { new File(extDir, FOLDER_COMMON_SRC), new File(extDir, FOLDER_ENGINE_SRC) };
         List<File> srcFiles = listFiles(srcDirs, platformConfig.sourceRe);
 
-        if (srcFiles.isEmpty()) {
-            LOGGER.warn("Extension has no source!");
+        if (srcFiles.isEmpty() && !hasRust) {
+            throw new ExtenderException(String.format("%s:1: error: Extension has no source!", ExtenderUtil.getRelativePath(this.uploadDirectory, manifest) ));
         }
 
         // Generate C++ files first (output into the source folder)
@@ -679,10 +680,17 @@ class Extender {
 
         LOGGER.info("Compiling extension");
 
-        File rustTarget = new File(this.buildDirectory, "rust");
+        File rustTarget = new File("/var/extender/target");
         if (hasRust) {
             processExecutor.execute("cargo crate-type static --file " + cargoManifest.getPath());
-            commands.add("cargo build --lib --release --manifest-path=" + cargoManifest.getPath() + " --target-dir=" + rustTarget);
+            rustConfig.setClangArgs(processExecutor);
+
+            String buildCommand = "cargo build --lib --release --manifest-path=" + cargoManifest.getPath() + " --target-dir=" + rustTarget + " --target=" + rustConfig.rustName;
+
+            if (System.getenv("RUST_DEBUG") != null) processExecutor.putEnv("RUST_BACKTRACE", "1");
+            if (System.getenv("RUST_DEBUG") != null) buildCommand += " -v";
+
+            commands.add(buildCommand);
         }
 
         // Compile C++ source into object files
@@ -707,8 +715,17 @@ class Extender {
         context.put("objs", objs);
 
         if (hasRust) {
-            File builtLib = listFiles(new File(rustTarget, "release"), "^lib.*\\.a$").get(0);
-            FileUtils.moveFile(builtLib, (File) context.get("tgt"));
+//            File builtLib = listFiles(new File(rustTarget, "release"), "^lib.*\\.a$").get(0);
+            File outputDir = new File(rustTarget, RustConfig.rustName(this.platform) + "/release");
+            try {
+                File builtLib = ExtenderUtil.listFilesMatching(
+                        outputDir,
+                        this.platformConfig.stlibRe
+                )[0];
+                FileUtils.moveFile(builtLib, (File) context.get("tgt"));
+            } catch (IndexOutOfBoundsException e) {
+                LOGGER.error("Couldn't find a valid static lib in " + outputDir.getAbsolutePath() + "!");
+            }
         }
 
         String command = templateExecutor.execute(platformConfig.libCmd, context);
@@ -955,6 +972,8 @@ class Extender {
         context.put("libs", patchLibs((List<String>) context.get("libs")));
         context.put("extLibs", patchLibs((List<String>) context.get("extLibs")));
         context.put("engineLibs", patchLibs((List<String>) context.get("engineLibs")));
+
+        RustConfig.forPlatform(this.platform).putLibs(context);
 
         List<String> commands = platformConfig.linkCmds; // Used by e.g. the Switch platform
 

@@ -163,13 +163,11 @@ ENV \
   WindowsSDKVersion="${WINDOWS_SDK_10_VERSION}"
 
 # windres: Allows for generating .res files that can be used during linking
-RUN if [ -z "$WINDOWS_SDK" ] ; then echo Skipping Windows setup... ; else \
-  echo "Win32 SDK - WINDRES" && \
+RUN echo "Win32 SDK - WINDRES" && \
   apt-get update && \
   apt-get install -y binutils-mingw-w64-x86-64 && \
   ls -la /usr/bin/x86_64-w64-mingw32-windres && \
-  ln -s /usr/bin/x86_64-w64-mingw32-windres /usr/local/bin/windres \
-  ; fi
+  ln -s /usr/bin/x86_64-w64-mingw32-windres /usr/local/bin/windres
 
 RUN if [ -z "$WINDOWS_SDK" ] ; then echo Skipping Windows setup... ; else \
   echo "WIN32 2019 SDK" && \
@@ -183,10 +181,8 @@ RUN if [ -z "$WINDOWS_SDK" ] ; then echo Skipping Windows setup... ; else \
   wget -q -O - ${DM_PACKAGES_URL}/WindowsKits-${WINDOWS_SDK_10_VERSION}.tar.gz | tar xz -C ${PLATFORMSDK_WIN32}/WindowsKits \
   ; fi
 
-RUN if [ -z "$WINDOWS_SDK" ] ; then echo Skipping Windows setup... ; else \
-  ln -s /usr/local/bin/clang /usr/local/bin/x86_64-pc-win32-clang && \
-  ln -s /usr/local/bin/llvm-ar /usr/local/bin/x86_64-pc-win32-clang-ar \
-  ; fi
+RUN ln -s /usr/local/bin/clang /usr/local/bin/x86_64-pc-win32-clang && \
+  ln -s /usr/local/bin/llvm-ar /usr/local/bin/x86_64-pc-win32-clang-ar
 
 # Due to Windows' case insensitive file system, the sources reference lib files with wrong cases
 # so we solve the bulk by making the suffixes lowercase
@@ -455,7 +451,8 @@ ENV SWIFT_5_5_VERSION       5.5
 USER extender
 ENV RUSTUP_HOME /var/extender/rustup
 ENV CARGO_HOME  /var/extender/cargo
-RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable --no-modify-path -y
+RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable --no-modify-path -y \
+	-t x86_64-pc-windows-msvc
 ENV PATH $CARGO_HOME/bin:$PATH
 USER root
 
@@ -472,6 +469,8 @@ ADD cargo-config.toml "$CARGO_HOME/config.toml"
 
 USER extender
 RUN cargo install cargo-crate-type
+# TODO use prefetch to cache dmsdk (requires uploading to crates.io)
+#RUN cargo install cargo-prefetch
 USER root
 
 

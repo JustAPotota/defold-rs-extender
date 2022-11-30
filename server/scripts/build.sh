@@ -13,6 +13,10 @@ if [ "${DM_PACKAGES_URL}" != "" ]; then
 	ENV='--build-arg DM_PACKAGES_URL'
 fi
 
+if [ "${WINDOWS_SDK}" != "" ]; then
+	ENV="${ENV} --build-arg WINDOWS_SDK"
+fi
+
 if [ "${ENV}" != "" ]; then
 	echo "Using ENV: ${ENV}"
 fi
