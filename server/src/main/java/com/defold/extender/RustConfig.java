@@ -34,6 +34,13 @@ public class RustConfig {
                 new String[]{"WIN32", "WINVER=0x0600"},
                 new String[]{"bcrypt", "userenv"}
         ));
+
+        platforms.put("x86-win32", new RustConfig(
+                "i686-pc-windows-msvc",
+                forPlatform("x86_64-win32").sysSearchPaths,
+                forPlatform("x86_64-win32").defines,
+                forPlatform("x86_64-win32").libs
+        ));
     }
 
     public static RustConfig forPlatform(String defoldName) {

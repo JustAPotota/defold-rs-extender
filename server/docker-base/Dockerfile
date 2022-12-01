@@ -451,18 +451,19 @@ USER extender
 ENV RUSTUP_HOME /var/extender/rustup
 ENV CARGO_HOME  /var/extender/cargo
 RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable --no-modify-path -y \
-	-t x86_64-pc-windows-msvc
+	-t x86_64-pc-windows-msvc \
+    -t i686-pc-windows-msvc
 ENV PATH $CARGO_HOME/bin:$PATH
 USER root
 
 # sccache setup
-RUN cd "/var/extender"
-RUN curl -L "https://github.com/mozilla/sccache/releases/download/v0.3.0/sccache-v0.3.0-x86_64-unknown-linux-musl.tar.gz" | \
-	tar -xz
-RUN mv "sccache-v0.3.0-x86_64-unknown-linux-musl/sccache" "$CARGO_HOME/bin/"
-RUN chmod 755 "$CARGO_HOME/bin/sccache"
-RUN rm -rf "sccache-v0.3.0-x86_64-unknown-linux-musl"
-ENV SCCACHE_DIR /var/extender/sccache
+#RUN cd "/var/extender"
+#RUN curl -L "https://github.com/mozilla/sccache/releases/download/v0.3.0/sccache-v0.3.0-x86_64-unknown-linux-musl.tar.gz" | \
+#	tar -xz
+#RUN mv "sccache-v0.3.0-x86_64-unknown-linux-musl/sccache" "$CARGO_HOME/bin/"
+#RUN chmod 755 "$CARGO_HOME/bin/sccache"
+#RUN rm -rf "sccache-v0.3.0-x86_64-unknown-linux-musl"
+#ENV SCCACHE_DIR /var/extender/sccache
 
 ADD cargo-config.toml "$CARGO_HOME/config.toml"
 
