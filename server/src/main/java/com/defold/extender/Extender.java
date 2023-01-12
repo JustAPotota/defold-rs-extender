@@ -658,6 +658,9 @@ class Extender {
         File cargoManifest = new File(extDir, "src/Cargo.toml");
         boolean hasRust = cargoManifest.isFile();
         RustConfig rustConfig = RustConfig.forPlatform(this.platform);
+        if (rustConfig == null) {
+            throw new ExtenderException(String.format("%s:1: Rust is not currently supported on this platform!", ExtenderUtil.getRelativePath(this.uploadDirectory, manifest)));
+        }
 
         // Gather all the C++ files
         File[] srcDirs = { new File(extDir, FOLDER_COMMON_SRC), new File(extDir, FOLDER_ENGINE_SRC) };
@@ -679,8 +682,6 @@ class Extender {
         List<String> objs = new ArrayList<>();
         List<String> commands = new ArrayList<>();
 
-        LOGGER.info("Compiling extension");
-
         File rustTarget = new File("/var/extender/target");
         if (hasRust) {
             processExecutor.execute("cargo crate-type static --file " + cargoManifest.getPath());
@@ -701,6 +702,8 @@ class Extender {
             objs.add(ExtenderUtil.getRelativePath(jobDirectory, o));
             i++;
         }
+
+        LOGGER.info("Compiling extension");
 
         ProcessExecutor.executeCommands(processExecutor, commands); // in parallel
 

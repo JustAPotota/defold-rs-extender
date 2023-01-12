@@ -20,6 +20,18 @@ public class RustConfig {
                 "x86_64-unknown-linux-gnu"
         ));
 
+        platforms.put("js-web", new RustConfig(
+                "asmjs-unknown-emscripten"
+        ));
+
+        platforms.put("wasm-web", new RustConfig(
+                "wasm32-unknown-emscripten",
+                new String[]{
+                        "/opt/platformsdk/emsdk-2.0.11/upstream/emscripten/system/include/compat",
+                        "/usr/include"
+                }
+        ));
+
         // TODO grab include paths from build.yml
         platforms.put("x86_64-win32", new RustConfig(
                 "x86_64-pc-windows-msvc",
@@ -85,5 +97,8 @@ public class RustConfig {
 
     private RustConfig(String rustName) {
         this(rustName, new String[]{}, new String[]{}, new String[]{});
+    }
+    private RustConfig(String rustName, String[] sysSearchPaths) {
+        this(rustName, sysSearchPaths, new String[]{}, new String[]{});
     }
 }

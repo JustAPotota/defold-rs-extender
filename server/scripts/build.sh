@@ -17,6 +17,10 @@ if [ "${WINDOWS_SDK}" != "" ]; then
 	ENV="${ENV} --build-arg WINDOWS_SDK"
 fi
 
+if [ "${EMSCRIPTEN_SDK}" != "" ]; then
+	ENV="${ENV} --build-arg EMSCRIPTEN_SDK"
+fi
+
 if [ "${ENV}" != "" ]; then
 	echo "Using ENV: ${ENV}"
 fi
