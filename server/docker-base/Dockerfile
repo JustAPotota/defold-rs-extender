@@ -451,9 +451,10 @@ USER extender
 ENV RUSTUP_HOME /var/extender/rustup
 ENV CARGO_HOME  /var/extender/cargo
 RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable --no-modify-path -y \
-	-t x86_64-pc-windows-msvc \
-    -t asmjs-unknown-emscripten \
-	-t wasm32-unknown-emscripten
+  -t x86_64-pc-windows-msvc \
+  -t i686-pc-windows-msvc \
+  -t asmjs-unknown-emscripten \
+  -t wasm32-unknown-emscripten
 ENV PATH $CARGO_HOME/bin:$PATH
 USER root
 
