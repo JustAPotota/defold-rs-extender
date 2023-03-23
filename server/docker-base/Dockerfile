@@ -227,27 +227,48 @@ RUN if [ -z "$WINDOWS_SDK" ] ; then echo Skipping Windows setup... ; else \
 ARG ANDROID_SDK
 
 ENV ANDROID_ROOT ${PLATFORMSDK_DIR}/android
-ENV ANDROID_BUILD_TOOLS_VERSION 32.0.0
 # ANDROID_HOME has been replaced with ANDROID_SDK_ROOT
 ENV ANDROID_HOME ${ANDROID_ROOT}/android-sdk-linux
 ENV ANDROID_SDK_ROOT ${ANDROID_HOME}
 # ANDROID_SDK_HOME is the location of the .android folder
 ENV ANDROID_SDK_HOME ${ANDROID_ROOT}/.android
-ENV ANDROID_TARGET_API_LEVEL 31
-ENV ANDROID_MIN_API_LEVEL 16
-ENV ANDROID_GCC_VERSION 4.8
+
+#
+# Old SDK 32:
+#
+
+ENV ANDROID_BUILD_TOOLS_VERSION 32.0.0
 ENV ANDROID_SDK_VERSION 31
 ENV ANDROID_SDK_FILENAME android-sdk-linux-android-${ANDROID_SDK_VERSION}-${ANDROID_BUILD_TOOLS_VERSION}.tar.gz
-ENV ANDROID_STL_INCLUDE ${ANDROID_ROOT}/android-ndk-r${ANDROID_NDK_VERSION}/sources/cxx-stl/gnu-libstdc++/${ANDROID_GCC_VERSION}/include
-ENV ANDROID_STL_ARCH_INCLUDE ${ANDROID_ROOT}/android-ndk-r${ANDROID_NDK_VERSION}/sources/cxx-stl/gnu-libstdc++/${ANDROID_GCC_VERSION}/libs/armeabi-v7a/include
-ENV ANDROID_STL_LIB ${ANDROID_ROOT}/android-ndk-r${ANDROID_NDK_VERSION}/sources/cxx-stl/gnu-libstdc++/${ANDROID_GCC_VERSION}/libs/armeabi-v7a
-ENV ANDROID_SYSROOT ${ANDROID_ROOT}/android-ndk-r${ANDROID_NDK_VERSION}/platforms/android-${ANDROID_NDK_API_VERSION}/arch-arm
-ENV ANDROID_BIN_PATH ${ANDROID_ROOT}/android-ndk-r${ANDROID_NDK_VERSION}/toolchains/arm-linux-androideabi-${ANDROID_GCC_VERSION}/prebuilt/linux-x86_64/bin
+
 ENV ANDROID_SDK_BUILD_TOOLS_PATH ${ANDROID_HOME}/build-tools/${ANDROID_BUILD_TOOLS_VERSION}
 ENV ANDROID_LIBRARYJAR ${ANDROID_HOME}/platforms/android-${ANDROID_SDK_VERSION}/android.jar
 
-# We must keep two NDKs alive for now, since migrating to the latest (i.e 20) will break
+ENV PATH ${PATH}:${ANDROID_HOME}/tools:${ANDROID_HOME}/platform-tools:${ANDROID_SDK_BUILD_TOOLS_PATH}
+
+#
+# New SDK 33 (Defold 1.4.3):
+#
+
+ENV ANDROID_BUILD_TOOLS_VERSION_33 33.0.1
+ENV ANDROID_SDK_VERSION_33 33
+ENV ANDROID_SDK_FILENAME_33 android-sdk-linux-android-${ANDROID_SDK_VERSION_33}-${ANDROID_BUILD_TOOLS_VERSION_33}.tar.gz
+
+ENV ANDROID_SDK_BUILD_TOOLS_PATH_33 ${ANDROID_HOME}/build-tools/${ANDROID_BUILD_TOOLS_VERSION_33}
+ENV ANDROID_LIBRARYJAR_33 ${ANDROID_HOME}/platforms/android-${ANDROID_SDK_VERSION_33}/android.jar
+
+# We specify it in build_input.yml by setting it the first in PATH
+# ENV PATH ${PATH}:${ANDROID_HOME}/tools:${ANDROID_HOME}/platform-tools:${ANDROID_SDK_BUILD_TOOLS_PATH_33}
+
+
+
+# We must keep two NDKs alive for now, since migrating to the latest (i.e 25b) will break
 # for users that try to build with an older build.yml.
+
+#
+# Old NDK20:
+#
+
 ENV ANDROID_NDK20_VERSION        20
 ENV ANDROID_NDK20_API_VERSION    16
 ENV ANDROID_64_NDK20_API_VERSION 21
@@ -260,9 +281,27 @@ ENV ANDROID_NDK20_STL_LIB    ${ANDROID_NDK20_PATH}/sources/cxx-stl/llvm-libc++/l
 ENV ANDROID_64_NDK20_STL_LIB ${ANDROID_NDK20_PATH}/sources/cxx-stl/llvm-libc++/libs/arm64-v8a
 ENV ANDROID_NDK20_FILENAME   android-ndk-r${ANDROID_NDK20_VERSION}-linux-x86_64.tar.gz
 
-ENV AAPT ${ANDROID_SDK_BUILD_TOOLS_PATH}/aapt
+ENV PATH ${PATH}:${ANDROID_NDK20_BIN_PATH}
 
-ENV PATH ${PATH}:${ANDROID_HOME}/tools:${ANDROID_HOME}/platform-tools:${ANDROID_SDK_BUILD_TOOLS_PATH}:${ANDROID_NDK20_BIN_PATH}
+#
+# New NDK25b (Defold 1.4.3):
+#
+
+ENV ANDROID_NDK25_VERSION        25b
+ENV ANDROID_NDK25_API_VERSION    19
+ENV ANDROID_64_NDK25_API_VERSION 21
+
+# These paths are the same for both the 32 and 64 bit toolchains
+ENV ANDROID_NDK25_PATH       ${ANDROID_ROOT}/android-ndk-r${ANDROID_NDK25_VERSION}
+ENV ANDROID_NDK25_BIN_PATH   ${ANDROID_NDK25_PATH}/toolchains/llvm/prebuilt/linux-x86_64/bin
+ENV ANDROID_NDK25_SYSROOT    ${ANDROID_NDK25_PATH}/toolchains/llvm/prebuilt/linux-x86_64/sysroot
+ENV ANDROID_NDK25_FILENAME   android-ndk-r${ANDROID_NDK25_VERSION}-linux.tar.gz
+
+# We specify it in build_input.yml by setting it the first in PATH
+# ENV PATH ${PATH}:${ANDROID_NDK25_BIN_PATH}
+
+#
+#
 
 # android proguard was version 4.7, this is at least 5.2.1 which seems to work with OpenJDK 11
 RUN if [ -z "$ANDROID_SDK" ] ; then echo Skipping Android setup... ; else \
@@ -277,8 +316,12 @@ RUN if [ -z "$ANDROID_SDK" ] ; then echo Skipping Android setup... ; else \
     echo "Android SDK" && \
     mkdir -p ${ANDROID_HOME} && \
     wget -q -O - ${DM_PACKAGES_URL}/${ANDROID_NDK20_FILENAME} | tar xz -C ${ANDROID_ROOT} && \
+    wget -q -O - ${DM_PACKAGES_URL}/${ANDROID_NDK25_FILENAME} | tar xz -C ${ANDROID_ROOT} && \
     wget -q -O - ${DM_PACKAGES_URL}/${ANDROID_SDK_FILENAME} | tar xz -C ${ANDROID_HOME} --strip-components=1 && \
+    wget -q -O - ${DM_PACKAGES_URL}/${ANDROID_SDK_FILENAME_33} | tar xz -C ${ANDROID_HOME} --strip-components=1 && \
 #cleanup
+    rm -rf ${ANDROID_HOME}/extras && \
+
     rm -rf ${ANDROID_NDK20_PATH}/simpleperf && \
     rm -rf ${ANDROID_NDK20_PATH}/shader-tools && \
     rm -rf ${ANDROID_NDK20_PATH}/sources/third_party && \
@@ -294,6 +337,19 @@ RUN if [ -z "$ANDROID_SDK" ] ; then echo Skipping Android setup... ; else \
     rm -rf ${ANDROID_NDK20_PATH}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-* && \
     rm -rf ${ANDROID_NDK20_PATH}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android && \
     rm -rf ${ANDROID_NDK20_PATH}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/i686-linux-android && \
+
+    rm -rf ${ANDROID_NDK25_PATH}/prebuilt && \
+    rm -rf ${ANDROID_NDK25_PATH}/simpleperf && \
+    rm -rf ${ANDROID_NDK25_PATH}/shader-tools && \
+    rm -rf ${ANDROID_NDK25_PATH}/sources/third_party && \
+    rm -rf ${ANDROID_NDK25_PATH}/sources/cxx-stl && \
+    rm -rf ${ANDROID_NDK25_PATH}/toolchains/llvm/prebuilt/linux-x86_64/i686-linux-android && \
+    rm -rf ${ANDROID_NDK25_PATH}/toolchains/llvm/prebuilt/linux-x86_64/x86_64-linux-android && \
+    rm -rf ${ANDROID_NDK25_PATH}/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-* && \
+    rm -rf ${ANDROID_NDK25_PATH}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-* && \
+    rm -rf ${ANDROID_NDK25_PATH}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android && \
+    rm -rf ${ANDROID_NDK25_PATH}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/i686-linux-android && \
+
 # create the .android folder and give read+write permissions (the Android Gradle plugin will write to the folder)
 # It is not enough to give 'user' and 'group'. We unfortunately also need 'others'
     mkdir ${ANDROID_SDK_HOME} && \
@@ -302,10 +358,13 @@ RUN if [ -z "$ANDROID_SDK" ] ; then echo Skipping Android setup... ; else \
     chmod +r -R ${ANDROID_ROOT} && \
     chmod +w -R ${ANDROID_SDK_ROOT} && \
     chmod -R 755 ${ANDROID_ROOT}/android-ndk-r${ANDROID_NDK20_VERSION} && \
+    chmod -R 755 ${ANDROID_ROOT}/android-ndk-r${ANDROID_NDK25_VERSION} && \
 # check that dx installed properly
     ls -la ${ANDROID_SDK_BUILD_TOOLS_PATH}/d8 && \
     which armv7a-linux-androideabi${ANDROID_NDK20_API_VERSION}-clang++ && \
     which aarch64-linux-android${ANDROID_64_NDK20_API_VERSION}-clang++ && \
+    which ${ANDROID_NDK25_BIN_PATH}/armv7a-linux-androideabi${ANDROID_NDK25_API_VERSION}-clang++ && \
+    which ${ANDROID_NDK25_BIN_PATH}/aarch64-linux-android${ANDROID_64_NDK25_API_VERSION}-clang++ && \
 # check that aapt installed correctly
     aapt v \
     ; fi
@@ -327,6 +386,14 @@ RUN if [ -z "$SWITCH_SDK" ] ; then echo Skipping Nintendo Switch setup... ; else
   wget -q -O - ${DM_PACKAGES_URL}/${SWITCH_SDK_14_FILENAME} | tar xz -C ${NINTENDO_SDK_ROOT_14_3_0} \
   ; fi
 
+# Added in version 1.4.4
+ENV NINTENDO_SDK_ROOT_15_3_2 ${PLATFORMSDK_DIR}/nx-15.3.2
+ENV SWITCH_SDK_15_FILENAME nx64-sdk-15.3.2.tar.gz
+
+RUN \
+  echo "Switch SDK 15.3.2" && \
+  mkdir -p ${NINTENDO_SDK_ROOT_15_3_2} && \
+  wget -q -O - ${DM_PACKAGES_URL}/${SWITCH_SDK_15_FILENAME} | tar xz -C ${NINTENDO_SDK_ROOT_15_3_2}
 
 #
 # PS4 SDK
@@ -423,28 +490,8 @@ COPY template.build.gradle ${EXTENSION_BUILD_GRADLE_TEMPLATE}
 COPY template.gradle.properties ${EXTENSION_GRADLE_PROPERTIES_TEMPLATE}
 COPY template.local.properties ${EXTENSION_LOCAL_PROPERTIES_TEMPLATE}
 
-# iOS + MacOS
-# Although the building isn't done using the Docker container anymore
-# we still need to be able to resolve the variables in the case when we run the docker container locally  when debugging
-
-# NOTE: These values are replicated in server/scripts/standalone/service-standalone.sh
-# Install flow from  >=1.2.174
-ENV XCODE_12_VERSION      12.5
-ENV MACOS_10_15_VERSION   10.15
-ENV IOS_14_VERSION        14.5
-ENV LIB_TAPI_1_6_PATH     /usr/local/tapi1.6/lib
-# Install flow from >=1.2.185
-ENV MACOS_11_VERSION        11.3
-ENV XCODE_12_CLANG_VERSION  12.0.5
-ENV SWIFT_5_VERSION         5.0
-
-# Versions from >=1.2.191
-ENV XCODE_13_VERSION        13.2.1
-ENV MACOS_12_VERSION        12.1
-ENV IOS_15_VERSION          15.2
-ENV XCODE_13_CLANG_VERSION  13.0.0
-ENV SWIFT_5_5_VERSION       5.5
-
+ENV EXTENSION_PODFILE_TEMPLATE /var/extender/template.podfile
+COPY template.podfile ${EXTENSION_PODFILE_TEMPLATE}
 
 # Rust setup
 USER extender
