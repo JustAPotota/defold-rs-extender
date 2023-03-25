@@ -390,10 +390,11 @@ RUN if [ -z "$SWITCH_SDK" ] ; then echo Skipping Nintendo Switch setup... ; else
 ENV NINTENDO_SDK_ROOT_15_3_2 ${PLATFORMSDK_DIR}/nx-15.3.2
 ENV SWITCH_SDK_15_FILENAME nx64-sdk-15.3.2.tar.gz
 
-RUN \
+RUN if [ -z "$SWITCH_SDK" ] ; then echo Skipping Nintendo Switch setup... ; else \
   echo "Switch SDK 15.3.2" && \
   mkdir -p ${NINTENDO_SDK_ROOT_15_3_2} && \
-  wget -q -O - ${DM_PACKAGES_URL}/${SWITCH_SDK_15_FILENAME} | tar xz -C ${NINTENDO_SDK_ROOT_15_3_2}
+  wget -q -O - ${DM_PACKAGES_URL}/${SWITCH_SDK_15_FILENAME} | tar xz -C ${NINTENDO_SDK_ROOT_15_3_2} \
+  ; fi
 
 #
 # PS4 SDK

@@ -55,6 +55,10 @@ public class RustConfig {
         ));
     }
 
+    public static boolean isSupported(String defoldName) {
+        return platforms.get(defoldName) != null;
+    }
+
     public static RustConfig forPlatform(String defoldName) {
         return platforms.get(defoldName);
     }

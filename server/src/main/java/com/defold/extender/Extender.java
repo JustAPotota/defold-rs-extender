@@ -647,7 +647,7 @@ class Extender {
         return generated;
     }
 
-    private List<String> compileExtensionSourceFiles(File extDir, Map<String, Object> manifestContext, List<File> srcFiles) throws IOException, InterruptedException, ExtenderException {
+    private List<String> compileExtensionSourceFiles(File extDir, Map<String, Object> manifestContext, List<File> srcFiles, File cargoManifest) throws IOException, InterruptedException, ExtenderException {
         List<String> objs = new ArrayList<>();
         List<String> commands = new ArrayList<>();
         for (File src : srcFiles) {
@@ -655,6 +655,21 @@ class Extender {
             File o = addCompileFileCppStatic(i, extDir, src, manifestContext, commands);
             objs.add(ExtenderUtil.getRelativePath(jobDirectory, o));
         }
+
+        if (cargoManifest.isFile()) {
+            File rustTarget = new File("/var/extender/target");
+            RustConfig rustConfig = RustConfig.forPlatform(this.platform);
+            processExecutor.execute("cargo crate-type static --file " + cargoManifest.getPath());
+            rustConfig.setClangArgs(processExecutor);
+
+            String buildCommand = "cargo build --lib --release --manifest-path=" + cargoManifest.getPath() + " --target-dir=" + rustTarget + " --target=" + rustConfig.rustName;
+
+            if (System.getenv("RUST_DEBUG") != null) processExecutor.putEnv("RUST_BACKTRACE", "1");
+            if (System.getenv("RUST_DEBUG") != null) buildCommand += " -v";
+
+            commands.add(buildCommand);
+        }
+
         ProcessExecutor.executeCommands(processExecutor, commands); // in parallel
         return objs;
     }
@@ -686,6 +701,7 @@ class Extender {
                 objs.add(ExtenderUtil.getRelativePath(jobDirectory, o));
             }
         }
+        LOGGER.info("Compiling extension");
         ProcessExecutor.executeCommands(processExecutor, commands); // in parallel
         return objs;
     }
@@ -726,8 +742,7 @@ class Extender {
 
         File cargoManifest = new File(extDir, "src/Cargo.toml");
         boolean hasRust = cargoManifest.isFile();
-        RustConfig rustConfig = RustConfig.forPlatform(this.platform);
-        if (rustConfig == null) {
+        if (!RustConfig.isSupported(this.platform)) {
             throw new ExtenderException(String.format("%s:1: Rust is not currently supported on this platform!", ExtenderUtil.getRelativePath(this.uploadDirectory, manifest)));
         }
 
@@ -741,7 +756,7 @@ class Extender {
             throw new ExtenderException(String.format("%s:1: error: Extension has no source!", ExtenderUtil.getRelativePath(this.uploadDirectory, manifest) ));
         }
 
-        // Generate C++ files first (output into the source folder)
+                // Generate C++ files first (output into the source folder)
         List<File> protoFiles = ExtenderUtil.listFiles(srcDirs, PROTO_RE);
         List<File> generated = generateProtoCxxForEngine(extDir, manifestContext, protoFiles);
         if (!protoFiles.isEmpty() && generated.isEmpty()) {
@@ -751,32 +766,7 @@ class Extender {
 
         // Compile extension source files
         List<String> objs = new ArrayList<>();
-        objs.addAll(compileExtensionSourceFiles(extDir, manifestContext, srcFiles));
-
-        File rustTarget = new File("/var/extender/target");
-        if (hasRust) {
-            processExecutor.execute("cargo crate-type static --file " + cargoManifest.getPath());
-            rustConfig.setClangArgs(processExecutor);
-
-            String buildCommand = "cargo build --lib --release --manifest-path=" + cargoManifest.getPath() + " --target-dir=" + rustTarget + " --target=" + rustConfig.rustName;
-
-            if (System.getenv("RUST_DEBUG") != null) processExecutor.putEnv("RUST_BACKTRACE", "1");
-            if (System.getenv("RUST_DEBUG") != null) buildCommand += " -v";
-
-            commands.add(buildCommand);
-        }
-
-        // Compile C++ source into object files
-        int i = getAndIncreaseNameCount();
-        for (File src : srcFiles) {
-            File o = addCompileFileCppStatic(i, extDir, src, manifestContext, commands);
-            objs.add(ExtenderUtil.getRelativePath(jobDirectory, o));
-            i++;
-        }
-
-        LOGGER.info("Compiling extension");
-
-        ProcessExecutor.executeCommands(processExecutor, commands); // in parallel
+        objs.addAll(compileExtensionSourceFiles(extDir, manifestContext, srcFiles, cargoManifest));
 
         // Create c++ library
         File lib = null;
@@ -790,7 +780,7 @@ class Extender {
         context.put("objs", objs);
 
         if (hasRust) {
-//            File builtLib = listFiles(new File(rustTarget, "release"), "^lib.*\\.a$").get(0);
+            File rustTarget = new File("/var/extender/target");
             File outputDir = new File(rustTarget, RustConfig.rustName(this.platform) + "/release");
             try {
                 File builtLib = ExtenderUtil.listFilesMatching(
